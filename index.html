@@ -1,138 +1,343 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ca">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Карта Документов</title>
-    
-    <!-- A-Frame библиотека -->
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    
-    <!-- Дополнительные компоненты -->
-    <script src="https://unpkg.com/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
-    
-    <!-- PDF.js для отображения PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    
-    <!-- Наши скрипты -->
-    <script src="js/documents.js"></script>
-    <script src="js/viewer.js"></script>
-    <script src="js/main.js"></script>
-    
-    <link rel="stylesheet" href="css/style.css">                                            <!-- Això carrega el teu fitxer d’estils des de la carpeta css/ --> 
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mapa 3D de documents</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#070b12;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+  #cam{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;display:none}
+  canvas{position:fixed;top:0;left:0;z-index:1;touch-action:none}
+
+  #start{position:fixed;inset:0;z-index:60;background:#0a1018;color:#EDE6D6;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:30px}
+  #start h1{font-size:22px;margin:0 0 8px}
+  #start p{font-size:14px;opacity:.7;margin:0 0 24px;max-width:330px;line-height:1.55}
+  #start button{border:none;padding:15px 30px;font-size:16px;font-weight:600;
+    border-radius:30px;cursor:pointer;margin:6px}
+  #btnAR{background:#5eead4;color:#0a1018}
+  #btnVR{background:rgba(255,255,255,.12);color:#EDE6D6}
+
+  #hud{position:fixed;top:0;left:0;right:0;z-index:10;padding:12px 14px;
+    background:linear-gradient(180deg,rgba(0,0,0,.7),rgba(0,0,0,0));color:#fff;pointer-events:none}
+  #hud h2{margin:0;font-size:14px;font-weight:600}
+  #hud p{margin:2px 0 0;font-size:11px;opacity:.7}
+
+  #crosshair{position:fixed;top:50%;left:50%;width:8px;height:8px;margin:-4px 0 0 -4px;
+    border:2px solid rgba(255,255,255,.55);border-radius:50%;z-index:9;pointer-events:none}
+
+  #panel{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(9,15,25,.97);
+    color:#fff;padding:18px 20px 24px;border-top:4px solid #5eead4;
+    transform:translateY(105%);transition:transform .25s ease;max-height:56vh;overflow-y:auto}
+  #panel.open{transform:translateY(0)}
+  #panel .tag{font-size:11px;text-transform:uppercase;letter-spacing:.6px;opacity:.55;
+    display:block;margin-bottom:6px}
+  #panel h3{margin:0 0 8px;font-size:17px;color:#5eead4;line-height:1.3}
+  #panel p{margin:0 0 14px;font-size:14px;line-height:1.55;opacity:.9}
+  #panel a.open{display:inline-block;background:#5eead4;color:#0a1018;text-decoration:none;
+    padding:11px 20px;border-radius:24px;font-weight:600;font-size:14px}
+  #panel .close{position:absolute;top:10px;right:16px;font-size:26px;opacity:.7;
+    line-height:1;cursor:pointer}
+
+  #legend{position:fixed;bottom:10px;left:0;right:0;z-index:8;display:flex;
+    flex-wrap:wrap;justify-content:center;gap:9px;padding:0 12px;
+    font-size:10px;color:#c8d4dc;pointer-events:none}
+  #legend span{display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.45);
+    padding:3px 8px;border-radius:12px}
+  #legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+</style>
 </head>
 <body>
-    <!-- 3D Сцена A-Frame -->
-    <a-scene id="scene" renderer="antialias: true; colorManagement: true;">
-        
-        <!-- Ассеты (ресурсы) -->
-        <a-assets>
-            <!-- Шрифт для текста -->
-            <img id="font" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-sans@master/fonts/NotoSans-Regular.ttf">
-        </a-assets>
-        
-        <!-- Освещение -->
-        <a-light type="ambient" color="#404040"></a-light>
-        <a-light type="directional" 
-                 position="5 10 7" 
-                 intensity="1"
-                 cast-shadow="true"></a-light>
-        <a-light type="point" 
-                 position="-5 5 -5" 
-                 intensity="0.5"></a-light>
-        
-        <!-- Камера с управлением -->
-        <a-entity id="rig" position="0 1.6 0">
-            <a-camera id="camera" 
-                      look-controls="pointerLockEnabled: true"
-                      wasd-controls="enabled: true">
-                <!-- Курсор для взаимодействия -->
-                <a-cursor id="cursor" 
-                          color="#4CC3D9"
-                          fuse="false"
-                          raycaster="objects: .document, .clickable">
-                </a-cursor>
-            </a-camera>
-        </a-entity>
-        
-        <!-- Пол (земля) -->
-        <a-plane position="0 0 0" 
-                 rotation="-90 0 0" 
-                 width="100" 
-                 height="100" 
-                 color="#222"
-                 shadow="receive: true">
-        </a-plane>
-        
-        <!-- Сетка для ориентации -->
-        <a-grid position="0 0.01 0" 
-                rotation="-90 0 0"
-                width="100" 
-                height="100">
-        </a-grid>
-        
-        <!-- Контейнер для документов -->
-        <a-entity id="documents-container"></a-entity>
-        
-        <!-- Информационная панель -->
-        <a-entity id="info-panel" 
-                  position="0 2 -3"
-                  visible="false">
-            <a-plane width="3" 
-                     height="2" 
-                     color="#FFF"
-                     opacity="0.9"
-                     shadow="receive: true">
-            </a-plane>
-            <a-text id="info-title" 
-                    value="Document Title"
-                    align="center"
-                    position="0 0.7 0.01"
-                    width="4"
-                    color="#000">
-            </a-text>
-            <a-text id="info-description" 
-                    value="Description here"
-                    align="center"
-                    position="0 0 0.01"
-                    width="3"
-                    color="#333">
-            </a-text>
-        </a-entity>
-        
-    </a-scene>
-    
-    <!-- HTML UI поверх сцены -->
-    <div id="ui-overlay">
-        <div id="controls-help">
-            <h3>Управление:</h3>
-            <p>WASD / Стрелки - Перемещение</p>
-            <p>Мышь - Обзор</p>
-            <p>Клик - Открыть документ</p>
-            <p>ESC - Закрыть документ</p>
-        </div>
-        
-        <div id="search-panel">
-            <input type="text" id="search-input" placeholder="Поиск документов...">
-            <button id="search-btn">🔍</button>
-        </div>
-        
-        <div id="stats">
-            <span id="doc-count">0 документов</span>
-        </div>
-    </div>
-    
-    <!-- Модальное окно для просмотра документа -->
-    <div id="document-viewer" class="hidden">
-        <div id="viewer-header">
-            <h2 id="viewer-title">Document</h2>
-            <button id="close-viewer">✕</button>
-        </div>
-        <div id="viewer-content">
-            <canvas id="pdf-canvas"></canvas>
-            <iframe id="doc-frame"></iframe>
-        </div>
-    </div>
-    
+
+<video id="cam" playsinline autoplay muted></video>
+
+<div id="start">
+  <h1>Mapa 3D dels meus documents</h1>
+  <p>Els documents apareixeran flotant al teu voltant, agrupats per tema i units per l&iacute;nies.
+     Gira't per explorar-los i toca'n un per obrir-lo.</p>
+  <button id="btnAR">Mode AR (amb c&agrave;mera)</button>
+  <button id="btnVR">Mode 3D (sense c&agrave;mera)</button>
+</div>
+
+<div id="hud">
+  <h2 id="hudtitle">Mapa de documents</h2>
+  <p id="hudsub">Gira't per explorar &middot; toca una esfera</p>
+</div>
+<div id="crosshair"></div>
+
+<div id="panel">
+  <span class="close" onclick="closePanel()">&times;</span>
+  <span class="tag" id="p-tag"></span>
+  <h3 id="p-title"></h3>
+  <p id="p-body"></p>
+  <a class="open" id="p-link" href="#" target="_blank" rel="noopener">Obrir el PDF</a>
+</div>
+
+<div id="legend"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script>
+// ==================================================================
+//  ELS TEUS DOCUMENTS. Per afegir-ne un de nou, copia un bloc i canvia
+//  title / path / category / description. La posicio es calcula sola.
+// ==================================================================
+var DOCS = [
+  {title:"Aspectes bàsics del contracte de distribució internacional", path:"documents/Aspectes bàsics del contracte de distribució internacional.pdf", category:"comercial",     description:"Contractes internacionals i distribució."},
+  {title:"Consideraciones para exportar Diseños",                      path:"documents/Consideraciones para exportar Diseños.pdf",                      category:"internacional", description:"Guia per a l'exportació de dissenys industrials."},
+  {title:"Decisors Econòmics",                                        path:"documents/Decisors Econòmics.pdf",                                        category:"economia",      description:"Anàlisi dels agents econòmics i la presa de decisions."},
+  {title:"Diagrama de Flujos Gestión Integral Proyectos",             path:"documents/Diagrama de Flujos Gestión Integral Proyectos.pdf",             category:"projectes",     description:"Fluxos de treball en la gestió de projectes."},
+  {title:"Informació sobre el compliment de Normes",                  path:"documents/Informació sobre el compliment de Normes.pdf",                  category:"normes",        description:"Normatives i conformitat en processos industrials."},
+  {title:"Model Keynesià",                                            path:"documents/Model Keynesià.pdf",                                            category:"economia",      description:"Model econòmic basat en la teoria de Keynes."},
+  {title:"Màrqueting Industrial",                                     path:"documents/Màrqueting Industrial.pdf",                                     category:"marketing",     description:"Estratègies de màrqueting aplicades al sector industrial."},
+  {title:"Patentabilitat",                                            path:"documents/Patentabilitat.pdf",                                            category:"propietat",     description:"Criteris i procediments per a la patentabilitat."},
+  {title:"Planificació Comercial",                                    path:"documents/Planificació Comercial.pdf",                                    category:"comercial",     description:"Estratègies de planificació comercial."},
+  {title:"Poyección Internacional del Diseño y Proyectos Industriales",path:"documents/Poyección Internacional del Diseño y Proyectos Industriales.pdf",category:"internacional", description:"Projecció internacional de disseny i projectes."},
+  {title:"Què és la Propietat Industrial",                            path:"documents/Què és la Propietat Industrial.pdf",                            category:"propietat",     description:"Introducció a la propietat industrial i intel·lectual."},
+  {title:"Resum de les diapositives dels apunts de classe",           path:"documents/Resum del més destacat de les diapositives dels apunts de classe.pdf", category:"educació", description:"Resum general dels continguts de classe."},
+  {title:"Segmentación",                                              path:"documents/Segmentación.pdf",                                              category:"marketing",     description:"Segmentació de mercats i posicionament."},
+  {title:"Spanish market study",                                      path:"documents/Spanish market study.pdf",                                      category:"marketing",     description:"Estudi de mercat espanyol."}
+];
+
+// Color per tema
+var CATCOLOR = {
+  comercial:0x4d96ff, internacional:0x00c9a7, economia:0xffc75f, projectes:0xff9671,
+  normes:0x845ec2,   marketing:0xff6b6b,     propietat:0x6bcb77, "educació":0xf9f871
+};
+
+// ================== ESCENA ==================
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.05, 200);
+var renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+document.body.appendChild(renderer.domElement);
+scene.add(new THREE.AmbientLight(0xffffff,0.95));
+var pl=new THREE.PointLight(0xffffff,0.5); pl.position.set(4,8,4); scene.add(pl);
+
+// Agrupa per categoria
+var CATS = {};
+DOCS.forEach(function(d){ (CATS[d.category] = CATS[d.category] || []).push(d); });
+var catNames = Object.keys(CATS);
+
+var meshes = [];
+function D(x){ return x*Math.PI/180; }
+
+function sphericalPos(yawDeg, pitchDeg, dist){
+  var y=D(yawDeg), p=D(pitchDeg);
+  return new THREE.Vector3(
+    dist*Math.cos(p)*Math.sin(y),
+    dist*Math.sin(p),
+    -dist*Math.cos(p)*Math.cos(y)
+  );
+}
+
+function makeLabel(text, colorHex, scaleF){
+  if(text.length>30) text = text.slice(0,29)+"...";
+  var c=document.createElement('canvas'), ctx=c.getContext('2d'), fs=44;
+  ctx.font='700 '+fs+'px system-ui,sans-serif';
+  var w=Math.ceil(ctx.measureText(text).width)+38, h=fs+24;
+  c.width=w; c.height=h; ctx=c.getContext('2d');
+  ctx.font='700 '+fs+'px system-ui,sans-serif';
+  ctx.fillStyle='rgba(5,9,16,0.9)';
+  if(ctx.roundRect){ctx.beginPath();ctx.roundRect(0,0,w,h,14);ctx.fill();}else ctx.fillRect(0,0,w,h);
+  ctx.fillStyle=colorHex; ctx.textBaseline='middle'; ctx.fillText(text,19,h/2+2);
+  var t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter;
+  var s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));
+  s.scale.set(w*scaleF,h*scaleF,1);
+  return s;
+}
+
+function addLine(a,b,color,op){
+  var g=new THREE.BufferGeometry().setFromPoints([a,b]);
+  scene.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:color,transparent:true,opacity:op})));
+}
+
+// --- Node central ---
+var centerPos = new THREE.Vector3(0,0.2,0);
+
+// --- Els temes es reparteixen en cercle al teu voltant ---
+catNames.forEach(function(cat, ci){
+  var catYaw = (ci/catNames.length)*360;
+  var color = CATCOLOR[cat] || 0x8fa3ad;
+  var catPos = sphericalPos(catYaw, 6, 4.2);
+
+  // esfera del tema
+  var hub = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34,24,24),
+    new THREE.MeshStandardMaterial({color:color,emissive:color,emissiveIntensity:0.35,roughness:0.4})
+  );
+  hub.position.copy(catPos);
+  hub.userData.info = {tag:"Tema", title:cat.charAt(0).toUpperCase()+cat.slice(1),
+    body:"Agrupa "+CATS[cat].length+" document(s). Les línies del mateix color uneixen els documents d'aquest tema.", path:null};
+  scene.add(hub); meshes.push(hub);
+
+  var hl = makeLabel(cat.toUpperCase(), '#ffffff', 0.0040);
+  hl.position.set(catPos.x, catPos.y+0.62, catPos.z);
+  scene.add(hl);
+
+  addLine(centerPos, catPos, color, 0.30);
+
+  // documents d'aquest tema, escampats al voltant del seu tema
+  var docs = CATS[cat];
+  docs.forEach(function(d, di){
+    var spread = docs.length===1 ? 0 : (di-(docs.length-1)/2)*17;
+    var pitch  = -16 - (di%2)*13;
+    var dpos = sphericalPos(catYaw+spread, pitch, 5.4);
+
+    var m = new THREE.Mesh(
+      new THREE.SphereGeometry(0.26,22,22),
+      new THREE.MeshStandardMaterial({color:color,emissive:color,emissiveIntensity:0.18,roughness:0.45})
+    );
+    m.position.copy(dpos);
+    m.userData.info = {tag:cat, title:d.title, body:d.description, path:d.path};
+    scene.add(m); meshes.push(m);
+
+    var lbl = makeLabel(d.title, '#F2E9DA', 0.0032);
+    lbl.position.set(dpos.x, dpos.y+0.5, dpos.z);
+    scene.add(lbl);
+
+    addLine(catPos, dpos, color, 0.5);
+  });
+});
+
+// node central
+var core = new THREE.Mesh(
+  new THREE.SphereGeometry(0.45,26,26),
+  new THREE.MeshStandardMaterial({color:0x1a4a7a,emissive:0x1a4a7a,emissiveIntensity:0.5,roughness:0.3})
+);
+core.position.copy(centerPos);
+core.userData.info = {tag:"Centre", title:"Els meus documents",
+  body:"Hi ha "+DOCS.length+" documents agrupats en "+catNames.length+" temes. Gira't per veure'ls tots al teu voltant.", path:null};
+scene.add(core); meshes.push(core);
+
+// llegenda HTML
+var lg=document.getElementById('legend');
+catNames.forEach(function(c){
+  var col='#'+(CATCOLOR[c]||0x8fa3ad).toString(16).padStart(6,'0');
+  lg.insertAdjacentHTML('beforeend','<span><i style="background:'+col+'"></i>'+c+'</span>');
+});
+
+// ================== ORIENTACIO ==================
+var devQ=new THREE.Quaternion(), hasGyro=false, sOrient=0;
+var tYaw=0, tPitch=0;
+var zee=new THREE.Vector3(0,0,1), q0=new THREE.Quaternion();
+var q1=new THREE.Quaternion(-Math.sqrt(0.5),0,0,Math.sqrt(0.5)), eu=new THREE.Euler();
+
+function onOrient(e){
+  if(e.alpha===null||e.alpha===undefined) return;
+  hasGyro=true;
+  eu.set(D(e.beta), D(e.alpha), -D(e.gamma), 'YXZ');
+  devQ.setFromEuler(eu);
+  devQ.multiply(q1);
+  devQ.multiply(q0.setFromAxisAngle(zee, -D(sOrient)));
+}
+window.addEventListener('orientationchange',function(){ sOrient=window.orientation||0; });
+
+var drag=false, moved=false, lx=0, ly=0;
+function s(x,y){drag=true;moved=false;lx=x;ly=y;}
+function mv(x,y){
+  if(!drag||hasGyro)return;
+  var dx=x-lx, dy=y-ly;
+  if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
+  tYaw-=dx*0.005;
+  tPitch=Math.max(Math.min(tPitch-dy*0.005,1.3),-1.3);
+  lx=x;ly=y;
+}
+function en(){drag=false;}
+var cv=renderer.domElement;
+cv.addEventListener('touchstart',function(e){if(e.touches.length)s(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+cv.addEventListener('touchmove',function(e){if(e.touches.length)mv(e.touches[0].clientX,e.touches[0].clientY);},{passive:true});
+cv.addEventListener('touchend',en);
+cv.addEventListener('mousedown',function(e){s(e.clientX,e.clientY);});
+window.addEventListener('mousemove',function(e){mv(e.clientX,e.clientY);});
+window.addEventListener('mouseup',en);
+
+// ================== SELECCIO ==================
+var ray=new THREE.Raycaster(), pt=new THREE.Vector2(), sel=null;
+function pick(cx,cy){
+  if(moved)return;
+  var r=cv.getBoundingClientRect();
+  pt.x=((cx-r.left)/r.width)*2-1;
+  pt.y=-((cy-r.top)/r.height)*2+1;
+  ray.setFromCamera(pt,camera);
+  var hits=ray.intersectObjects(meshes);
+  if(hits.length) openPanel(hits[0].object);
+}
+cv.addEventListener('click',function(e){pick(e.clientX,e.clientY);});
+cv.addEventListener('touchend',function(e){
+  if(e.changedTouches.length)pick(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+});
+
+function openPanel(m){
+  if(sel) sel.material.emissiveIntensity=sel.userData.baseEm||0.18;
+  sel=m;
+  if(m.userData.baseEm===undefined) m.userData.baseEm=m.material.emissiveIntensity;
+  m.material.emissiveIntensity=1.0;
+  var i=m.userData.info;
+  document.getElementById('p-tag').textContent=i.tag;
+  document.getElementById('p-title').textContent=i.title;
+  document.getElementById('p-body').textContent=i.body;
+  var a=document.getElementById('p-link');
+  if(i.path){ a.style.display='inline-block'; a.href=encodeURI(i.path); }
+  else a.style.display='none';
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  if(sel){ sel.material.emissiveIntensity=sel.userData.baseEm||0.18; sel=null; }
+}
+
+// ================== ARRENCADA ==================
+function askGyro(){
+  if(typeof DeviceOrientationEvent!=='undefined' &&
+     typeof DeviceOrientationEvent.requestPermission==='function'){
+    DeviceOrientationEvent.requestPermission().then(function(r){
+      if(r==='granted') window.addEventListener('deviceorientation',onOrient,true);
+      else document.getElementById('hudsub').textContent='Arrossega el dit per mirar al voltant';
+    }).catch(function(){
+      document.getElementById('hudsub').textContent='Arrossega el dit per mirar al voltant';
+    });
+  } else {
+    window.addEventListener('deviceorientation',onOrient,true);
+  }
+}
+
+document.getElementById('btnAR').addEventListener('click',function(){
+  document.getElementById('start').style.display='none';
+  var v=document.getElementById('cam');
+  v.style.display='block';
+  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})
+    .then(function(st){ v.srcObject=st; v.play(); })
+    .catch(function(){
+      v.style.display='none';
+      document.getElementById('hudsub').textContent='Sense càmera · mode 3D';
+    });
+  }
+  askGyro();
+});
+
+document.getElementById('btnVR').addEventListener('click',function(){
+  document.getElementById('start').style.display='none';
+  document.body.style.background='radial-gradient(circle at 30% 15%,#16202f 0%,#070b12 75%)';
+  askGyro();
+});
+
+window.addEventListener('resize',function(){
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+(function loop(){
+  requestAnimationFrame(loop);
+  if(hasGyro) camera.quaternion.copy(devQ);
+  else camera.rotation.set(tPitch,tYaw,0,'YXZ');
+  renderer.render(scene,camera);
+})();
+</script>
 </body>
 </html>
