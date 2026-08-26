@@ -49,10 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Добавляем телепортацию (быстрое перемещение)
-    this.setupTeleport();
+    setupTeleport();
     
     // Настраиваем камеру
-    this.setupCamera();
+    setupCamera();
 });
 
 /**
