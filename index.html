@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Карта Документов</title>
+    
+    <!-- A-Frame библиотека -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    
+    <!-- Дополнительные компоненты -->
+    <script src="https://unpkg.com/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
+    
+    <!-- PDF.js для отображения PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <!-- Наши скрипты -->
+    <script src="js/documents.js"></script>
+    <script src="js/viewer.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 3D Сцена A-Frame -->
+    <a-scene id="scene" renderer="antialias: true; colorManagement: true;">
+        
+        <!-- Ассеты (ресурсы) -->
+        <a-assets>
+            <!-- Шрифт для текста -->
+            <img id="font" src="https://cdn.jsdelivr.net/gh/googlefonts/noto-sans@master/fonts/NotoSans-Regular.ttf">
+        </a-assets>
+        
+        <!-- Освещение -->
+        <a-light type="ambient" color="#404040"></a-light>
+        <a-light type="directional" 
+                 position="5 10 7" 
+                 intensity="1"
+                 cast-shadow="true"></a-light>
+        <a-light type="point" 
+                 position="-5 5 -5" 
+                 intensity="0.5"></a-light>
+        
+        <!-- Камера с управлением -->
+        <a-entity id="rig" position="0 1.6 0">
+            <a-camera id="camera" 
+                      look-controls="pointerLockEnabled: true"
+                      wasd-controls="enabled: true">
+                <!-- Курсор для взаимодействия -->
+                <a-cursor id="cursor" 
+                          color="#4CC3D9"
+                          fuse="false"
+                          raycaster="objects: .document, .clickable">
+                </a-cursor>
+            </a-camera>
+        </a-entity>
+        
+        <!-- Пол (земля) -->
+        <a-plane position="0 0 0" 
+                 rotation="-90 0 0" 
+                 width="100" 
+                 height="100" 
+                 color="#222"
+                 shadow="receive: true">
+        </a-plane>
+        
+        <!-- Сетка для ориентации -->
+        <a-grid position="0 0.01 0" 
+                rotation="-90 0 0"
+                width="100" 
+                height="100">
+        </a-grid>
+        
+        <!-- Контейнер для документов -->
+        <a-entity id="documents-container"></a-entity>
+        
+        <!-- Информационная панель -->
+        <a-entity id="info-panel" 
+                  position="0 2 -3"
+                  visible="false">
+            <a-plane width="3" 
+                     height="2" 
+                     color="#FFF"
+                     opacity="0.9"
+                     shadow="receive: true">
+            </a-plane>
+            <a-text id="info-title" 
+                    value="Document Title"
+                    align="center"
+                    position="0 0.7 0.01"
+                    width="4"
+                    color="#000">
+            </a-text>
+            <a-text id="info-description" 
+                    value="Description here"
+                    align="center"
+                    position="0 0 0.01"
+                    width="3"
+                    color="#333">
+            </a-text>
+        </a-entity>
+        
+    </a-scene>
+    
+    <!-- HTML UI поверх сцены -->
+    <div id="ui-overlay">
+        <div id="controls-help">
+            <h3>Управление:</h3>
+            <p>WASD / Стрелки - Перемещение</p>
+            <p>Мышь - Обзор</p>
+            <p>Клик - Открыть документ</p>
+            <p>ESC - Закрыть документ</p>
+        </div>
+        
+        <div id="search-panel">
+            <input type="text" id="search-input" placeholder="Поиск документов...">
+            <button id="search-btn">🔍</button>
+        </div>
+        
+        <div id="stats">
+            <span id="doc-count">0 документов</span>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для просмотра документа -->
+    <div id="document-viewer" class="hidden">
+        <div id="viewer-header">
+            <h2 id="viewer-title">Document</h2>
+            <button id="close-viewer">✕</button>
+        </div>
+        <div id="viewer-content">
+            <canvas id="pdf-canvas"></canvas>
+            <iframe id="doc-frame"></iframe>
+        </div>
+    </div>
+    
+    <!-- Основной скрипт -->
+    <script src="js/main.js"></script>
+</body>
+</html>
