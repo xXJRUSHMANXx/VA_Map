@@ -1,3 +1,6 @@
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
 /**
  * Просмотрщик документов (PDF и другие форматы)
  */
@@ -56,7 +59,7 @@ class DocumentViewer {
     async renderPDF(path) {
         try {
             // Загружаем PDF
-            const loadingTask = pdfjsLib.getDocument(path);
+            const loadingTask = pdfjsLib.getDocument(encodeURI(path));
             const pdf = await loadingTask.promise;
             
             // Получаем первую страницу
