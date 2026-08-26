@@ -1,0 +1,187 @@
+css/style.css           #Aixo posa el arxiu en la carpeta
+
+/* Базовые стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    background: #000;
+}
+
+/* A-Scene на весь экран */
+a-scene {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+/* UI Overlay */
+#ui-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none; /* Чтобы клики проходили сквозь */
+}
+
+/* Панель помощи */
+#controls-help {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    pointer-events: auto;
+    max-width: 250px;
+}
+
+#controls-help h3 {
+    margin-bottom: 10px;
+    color: #4CC3D9;
+}
+
+#controls-help p {
+    margin: 5px 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* Панель поиска */
+#search-panel {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    pointer-events: auto;
+}
+
+#search-input {
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 25px;
+    width: 300px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+#search-btn {
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 25px;
+    background: #4CC3D9;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#search-btn:hover {
+    background: #3AA8C4;
+}
+
+/* Статистика */
+#stats {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    pointer-events: auto;
+}
+
+/* Модальное окно просмотра документа */
+#document-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+}
+
+#document-viewer.hidden {
+    display: none;
+}
+
+#viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #1a1a1a;
+    color: #fff;
+}
+
+#viewer-title {
+    font-size: 24px;
+}
+
+#close-viewer {
+    padding: 10px 20px;
+    font-size: 18px;
+    border: none;
+    border-radius: 5px;
+    background: #ff4444;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#close-viewer:hover {
+    background: #cc0000;
+}
+
+#viewer-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+    padding: 20px;
+}
+
+#pdf-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+#doc-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    #search-input {
+        width: 200px;
+    }
+    
+    #controls-help {
+        max-width: 200px;
+        font-size: 12px;
+    }
+}
